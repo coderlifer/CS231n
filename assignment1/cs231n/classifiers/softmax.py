@@ -29,7 +29,27 @@ def softmax_loss_naive(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  N = X.shape[0]
+  for i in xrange(N):
+    scores_i = np.dot(X[i, :], W) # score for ith training example
+    scores_i_max = np.max(scores_i) # get max value in scores_i
+    scores_i -= scores_i_max # normalization to avoid numeric instability
+
+    # compute loss, http://cs231n.github.io/linear-classify/#softmax
+    loss += -scores_i[y[i]] + np.log(np.sum(np.exp(scores_i)))
+
+    # Compute gradient
+    for j in xrange(W.shape[1]):
+      p = np.exp(scores_i[j]) / (np.sum(np.exp(scores_i)))
+      dW[:, j] += (p - 1 * (j==y[i])) * X[i, :]
+    
+  # Compute average
+  loss /= N
+  dW /= N
+
+  # Regularization
+  loss += 0.5 * reg * np.sum(W**2)
+  dW += reg * W
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -53,7 +73,32 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  N = X.shape[0]
+  
+  # compute scores
+  scores = np.dot(X, W) # N*C
+  scores_max = np.max(scores, axis = 1).reshape((N, -1))
+  scores -= scores_max
+
+  # scores of correct class
+  scores_correct = scores[np.arange(N), y]
+
+  # compute loss, http://cs231n.github.io/linear-classify/#softmax
+  loss = np.sum(-scores_correct + np.log(np.sum(np.exp(scores), axis=1)))
+  loss /= N
+  
+  
+  # Compute gradient
+  # not np.exp(scores_correct) / np.sum(np.exp(scores), axis=1).reshape((N,-1))
+  p = np.exp(scores) / np.sum(np.exp(scores), axis=1).reshape((N,-1))
+  ind = np.zeros(p.shape)
+  ind[np.arange(N), y] = 1
+  dW = np.dot(X.T, (p-ind))
+  dW /= N
+
+  # Regularization
+  loss += 0.5 * reg * np.sum(W**2)
+  dW += reg * W
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################

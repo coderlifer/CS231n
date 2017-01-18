@@ -82,6 +82,7 @@ def svm_loss_vectorized(W, X, y, reg):
   scores = np.dot(X, W)
   
   # compute correct_class_score
+  # correct_class_score = scores[np.arange(X.shape[0]), y].reshape((X.shape[0], -1))
   correct_class_score = []
   for i in xrange(X.shape[0]):
     correct_class_score.append(scores[i, y[i]])
