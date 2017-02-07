@@ -176,9 +176,9 @@ class FullyConnectedNet(object):
     ############################################################################
     # Params initialization
     total_dims = [input_dim] + hidden_dims + [num_classes]
-    for i in xrange(self.total_dims-1):
-      self.params['W'+str(i+1)] = weight_scale * np.random.randn(hidden_dims[i], hidden_dims[i+1])
-      self.params['b'+str(i+1)] = np.zeros((hidden_dims[i+1],))
+    for i in xrange(len(total_dims)-1):
+      self.params['W'+str(i+1)] = weight_scale * np.random.randn(total_dims[i], total_dims[i+1])
+      self.params['b'+str(i+1)] = np.zeros((total_dims[i+1],))
 
 
     # Batch normalization
@@ -255,17 +255,18 @@ class FullyConnectedNet(object):
       index_str = str(index + 1)
       
       # Affine layer
-      out_forward, cache['affine_'+index_str] =\
-                              affine_forward(out_forward, self.params['W'+index_str], self.params['b'+index_str])
+      out_forward, cache['affine_'+index_str] = affine_forward(out_forward, self.params['W'+index_str], self.params['b'+index_str])
       
       # Insert Batch-norm layer here:
       if self.use_batchnorm:
-          out_forward, cache['bn_'+index_str] =\
-          batchnorm_forward(out_forward, self.params['gamma'+index_str], self.params['beta'+index_str], self.bn_params[index])
+          out_forward, cache['bn_'+index_str] = batchnorm_forward(out_forward, self.params['gamma'+index_str], self.params['beta'+index_str], self.bn_params[index])
 
       # ReLU layer
       out_forward, cache['relu_'+index_str] = relu_forward(out_forward)
-      # Insert Drop-out layer here:
+
+      # Drop-out layer:
+      if self.use_dropout:
+        out_forward, cache['dropout_'+index_str] = dropout_forward(out_forward, self.dropout_param)
   
     # Last affine layer
     index_str = str(self.num_layers)
@@ -305,6 +306,10 @@ class FullyConnectedNet(object):
       
       # Taking care of regularized loss in the same loop - wow am I efficient or what
       loss += self.reg * 0.5 * np.sum(self.params['W'+index_str] ** 2)
+
+      # Drop-out layer:
+      if self.use_dropout:
+        dout = dropout_backward(dout, cache['dropout_'+index_str])
                                       
       # ReLU activation
       dout = relu_backward(dout, cache['relu_'+index_str])
